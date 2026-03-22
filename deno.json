@@ -1,0 +1,13 @@
+{
+  "imports": {
+    "@bunny.net/edgescript-sdk": "npm:@bunny.net/edgescript-sdk"
+  },
+  "tasks": {
+    "dev": "MICROPUB_TOKEN=test-token deno run --allow-net --allow-env --allow-read local.ts",
+    "dev:https": "HTTPS=true MICROPUB_TOKEN=test-token deno run --allow-net --allow-env --allow-read local.ts",
+    "check": "deno check index.ts local.ts"
+  },
+  "compilerOptions": {
+    "strict": true
+  }
+}

@@ -1,0 +1,64 @@
+/**
+ * Local development server.
+ *
+ * Runs the same handler logic as the Bunny Edge Script, but uses a mock
+ * Pagecord client that logs calls instead of hitting the real API.
+ *
+ * Usage (HTTP):
+ *   deno run --allow-net --allow-env --allow-read local.ts
+ *
+ * Usage (HTTPS, required by iA Writer):
+ *   mkcert micropub.test          # run once in the project directory
+ *   HTTPS=true deno run --allow-net --allow-env --allow-read local.ts
+ *   # then use https://micropub.test:8443/ in iA Writer
+ *
+ * Custom token / port:
+ *   MICROPUB_TOKEN=mytoken PORT=9000 deno run --allow-net --allow-env --allow-read local.ts
+ */
+import { handleRequest } from "./src/handler.ts";
+import { MockPagecordClient } from "./src/pagecord.ts";
+
+const MICROPUB_TOKEN = Deno.env.get("MICROPUB_TOKEN") ?? "test-token";
+const HTTPS = Deno.env.get("HTTPS") === "true";
+const PORT = parseInt(Deno.env.get("PORT") ?? (HTTPS ? "8443" : "8000"), 10);
+const HOST = Deno.env.get("HOST") ?? (HTTPS ? "micropub.test" : "localhost");
+const PROXY_URL = Deno.env.get("PROXY_URL") ?? `${HTTPS ? "https" : "http"}://${HOST}:${PORT}`;
+
+const mock = new MockPagecordClient((msg) => {
+  console.log("  " + msg);
+});
+
+console.log("=".repeat(60));
+console.log("Micropub → Pagecord proxy  (local / mock mode)");
+console.log("=".repeat(60));
+console.log(`Listening on    ${PROXY_URL}`);
+console.log(`Micropub token  ${MICROPUB_TOKEN}`);
+console.log(`Media endpoint  ${PROXY_URL}/media`);
+console.log("");
+console.log("Pagecord API calls are MOCKED — no posts will be created.");
+console.log("");
+
+const serveOptions: Deno.ServeOptions | Deno.ServeTlsOptions = HTTPS
+  ? {
+      port: PORT,
+      cert: Deno.readTextFileSync(`${HOST}.pem`),
+      key: Deno.readTextFileSync(`${HOST}-key.pem`),
+    }
+  : { port: PORT };
+
+Deno.serve(serveOptions, async (request: Request): Promise<Response> => {
+  const url = new URL(request.url);
+  const label = `${request.method} ${url.pathname}${url.search}`;
+  console.log(`→ ${label}`);
+
+  const response = await handleRequest(request, {
+    micropubToken: MICROPUB_TOKEN,
+    pagecord: mock,
+    proxyUrl: PROXY_URL,
+  });
+
+  console.log(`← ${response.status}`);
+  console.log("");
+
+  return response;
+});
