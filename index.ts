@@ -10,7 +10,7 @@
  */
 import * as BunnySDK from "@bunny.net/edgescript-sdk";
 import { handleRequest } from "./src/handler.ts";
-import { PagecordClient } from "./src/pagecord.ts";
+import { makePagecordClient } from "./src/pagecord.ts";
 
 const PAGECORD_API_KEY = Deno.env.get("PAGECORD_API_KEY") ?? "";
 const BLOG_URL = Deno.env.get("BLOG_URL") ?? "";
@@ -27,7 +27,7 @@ for (const [name, value] of [
   }
 }
 
-const pagecord = new PagecordClient(BLOG_URL, PAGECORD_API_KEY);
+const pagecord = makePagecordClient(BLOG_URL, PAGECORD_API_KEY);
 
 BunnySDK.net.http.serve(async (request: Request): Promise<Response> => {
   return handleRequest(request, {

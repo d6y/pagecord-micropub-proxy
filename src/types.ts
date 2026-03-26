@@ -37,7 +37,7 @@ export interface CreatePostParams {
   tags?: string;
 }
 
-export interface IPagecordClient {
-  createPost(params: CreatePostParams): Promise<string>;
-  uploadAttachment(blob: Blob, filename: string): Promise<PagecordAttachment>;
-}
+export type PagecordClient = {
+  createPost: (params: CreatePostParams) => Promise<string>;
+  uploadAttachment: (blob: Blob, filename: string) => Promise<PagecordAttachment>;
+};

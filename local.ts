@@ -16,7 +16,7 @@
  *   MICROPUB_TOKEN=mytoken PORT=9000 deno run --allow-net --allow-env --allow-read local.ts
  */
 import { handleRequest } from "./src/handler.ts";
-import { MockPagecordClient } from "./src/pagecord.ts";
+import { makeMockPagecordClient } from "./src/pagecord.ts";
 
 const MICROPUB_TOKEN = Deno.env.get("MICROPUB_TOKEN") ?? "test-token";
 const HTTPS = Deno.env.get("HTTPS") === "true";
@@ -24,9 +24,7 @@ const PORT = parseInt(Deno.env.get("PORT") ?? (HTTPS ? "8443" : "8000"), 10);
 const HOST = Deno.env.get("HOST") ?? (HTTPS ? "micropub.test" : "localhost");
 const PROXY_URL = Deno.env.get("PROXY_URL") ?? `${HTTPS ? "https" : "http"}://${HOST}:${PORT}`;
 
-const mock = new MockPagecordClient((msg) => {
-  console.log("  " + msg);
-});
+const mock = makeMockPagecordClient((msg) => console.log("  " + msg));
 
 console.log("=".repeat(60));
 console.log("Micropub → Pagecord proxy  (local / mock mode)");
