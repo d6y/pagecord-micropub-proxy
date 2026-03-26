@@ -96,6 +96,12 @@ curl -X POST \
   http://localhost:8000/media
 ```
 
+### Running the tests
+
+```sh
+deno task test
+```
+
 ---
 
 ## Deployment to Bunny Edge Scripting
