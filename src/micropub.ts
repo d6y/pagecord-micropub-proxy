@@ -107,17 +107,19 @@ function parseJsonEntry(body: unknown): ParsedEntry | null {
   }
 
   const rawStatus = firstOf(props["post-status"]) as string | undefined;
+  const categoryTags = (props["category"] ?? []).filter((v): v is string => typeof v === "string");
+  const { tags: hashTags, content: strippedContent } = extractHashtags(content);
 
   return {
     title: firstOf(props["name"]) as string | undefined,
-    content,
+    content: strippedContent,
     contentFormat,
     status: toPostStatus(rawStatus),
     slug:
       (firstOf(props["mp-slug"]) as string | undefined) ??
       (firstOf(props["slug"]) as string | undefined),
     publishedAt: firstOf(props["published"]) as string | undefined,
-    tags: (props["category"] ?? []).filter((v): v is string => typeof v === "string"),
+    tags: categoryTags.length > 0 ? categoryTags : hashTags,
     photos,
   };
 }
@@ -141,6 +143,20 @@ function firstOf(arr: unknown[] | undefined): unknown {
 
 function isPhotoKey(key: string): boolean {
   return key === "photo" || key === "photo[]";
+}
+
+function extractHashtags(html: string): { tags: string[]; content: string } {
+  const tags: string[] = [];
+  const tagPattern = /<span class="hashtag">#(\w+)<\/span>/g;
+  let match;
+  while ((match = tagPattern.exec(html)) !== null) {
+    tags.push(match[1]);
+  }
+  // Remove <p> blocks that contain only hashtag spans (whitespace allowed)
+  const content = html
+    .replace(/<p>(\s*<span class="hashtag">#\w+<\/span>\s*)+<\/p>/g, "")
+    .trim();
+  return { tags, content };
 }
 
 function toPostStatus(raw: string | undefined): PostStatus {

@@ -94,10 +94,14 @@ async function handlePost(
   if (action === "delete") return jsonError(501, "delete action is not yet implemented");
   if (action === "update") return jsonError(501, "update action is not yet implemented");
 
+  const clonedForLogging = request.clone();
+  const rawBody = await clonedForLogging.text();
+  console.log("[micropub] raw body:", rawBody);
   const entry = await parseMicropubRequest(request);
   if (!entry) {
     return jsonError(400, "Could not parse micropub request or unsupported post type (only h-entry is supported)");
   }
+  console.log("[micropub] parsed entry:", JSON.stringify(entry, null, 2));
 
   try {
     const attachments = await Promise.all(entry.photos.map((p) => resolveAndUpload(p, pagecord)));
