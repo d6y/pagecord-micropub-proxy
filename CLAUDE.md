@@ -10,11 +10,15 @@ A [Micropub protocol](https://www.w3.org/TR/micropub/) proxy that bridges Microp
 
 ```bash
 deno task dev          # HTTP dev server on localhost:8000 with mock Pagecord client
-deno task dev:https    # HTTPS dev server on micropub.test:8443 (requires mkcert setup)
-deno check index.ts local.ts  # TypeScript type-check
+deno task dev:https    # HTTPS dev server on micropub.test:8443 with mock Pagecord client (requires mkcert setup)
+deno task dev:live     # HTTPS dev server on micropub.test:8443 hitting the real Pagecord API
+deno check local.ts    # TypeScript type-check (index.ts cannot be checked with Deno tooling)
+deno task test         # Run tests
 ```
 
-The HTTPS dev mode requires mkcert certificates (`micropub.test.pem` and `micropub.test-key.pem`) and a `/etc/hosts` entry for `micropub.test`. See README for setup.
+`dev:live` requires `PAGECORD_API_KEY` and `MICROPUB_TOKEN` to be set in the environment.
+
+The HTTPS dev modes require mkcert certificates (`micropub.test.pem` and `micropub.test-key.pem`) and a `/etc/hosts` entry for `micropub.test`. See README for setup.
 
 ## Architecture
 
@@ -24,17 +28,19 @@ Micropub client → POST / → handler.ts → pagecord.ts → Pagecord API
 
 **Entry points:**
 - `index.ts` — Bunny Edge Script entry; uses `BunnySDK` globals, reads env vars, creates `PagecordClient`
-- `local.ts` — Deno dev server; creates `MockPagecordClient` that logs instead of calling the API
+- `local.ts` — Deno dev server; uses real `PagecordClient` if `PAGECORD_API_KEY` is set, otherwise `MockPagecordClient`
 
 **Core modules (`src/`):**
 - `handler.ts` — Routes all requests; GET `/` = discovery HTML, GET `/?q=config` = config JSON, POST `/` = create post, POST `/media` = upload image
 - `micropub.ts` — Parses incoming Micropub requests across all three content types (JSON, form-encoded, multipart) into a normalized `ParsedEntry`
-- `pagecord.ts` — `PagecordClient` (real API) and `MockPagecordClient` (dev logging); both implement `IPagecordClient`
+- `pagecord.ts` — `makePagecordClient` (real API, logs all requests/responses) and `makeMockPagecordClient` (dev logging); both implement `PagecordClient`
 - `types.ts` — TypeScript interfaces for the domain model
 
 ## Key Behaviors
 
 **Authentication:** All POST requests and `?q=` queries require `Authorization: Bearer <MICROPUB_TOKEN>`. Unauthenticated GET `/` returns discovery HTML.
+
+**Pagecord API:** Posts are sent as JSON to `https://api.pagecord.com/posts`. After a successful create, the client redirects to `https://pagecord.com/app/posts`.
 
 **Image handling:** Photos arrive as either `Blob` (multipart upload) or URL strings. The handler fetches URL-referenced images, uploads them to Pagecord's `/attachments` endpoint, then embeds them as `<action-text-attachment>` XML tags within post content.
 
@@ -48,15 +54,16 @@ Micropub client → POST / → handler.ts → pagecord.ts → Pagecord API
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `PAGECORD_API_KEY` | Bearer token for Pagecord API |
-| `BLOG_URL` | Pagecord API base URL |
-| `MICROPUB_TOKEN` | Static token Micropub clients must supply |
-| `PROXY_URL` | Public URL of this proxy (advertised in `?q=config` response) |
-| `HTTPS` | Set to `"true"` to enable HTTPS in local dev |
-| `PORT` / `HOST` | Override defaults in local dev |
+| Variable | Where | Description |
+|----------|-------|-------------|
+| `PAGECORD_API_KEY` | Production + live dev | Bearer token for Pagecord API |
+| `MICROPUB_TOKEN` | Production + live dev | Static token Micropub clients must supply |
+| `PROXY_URL` | Production | Public URL of this proxy (advertised in `?q=config` response) |
+| `HTTPS` | Local dev | Set to `"true"` to enable HTTPS (set automatically by `dev:https` and `dev:live` tasks) |
+| `PORT` / `HOST` | Local dev | Override defaults |
+
+The Pagecord API base URL (`https://api.pagecord.com`) is hardcoded — it is not configurable.
 
 ## Runtime Differences
 
-The production entry point (`index.ts`) uses Bunny Edge Script globals (`BunnySDK`, `__requestHandler`). These are not available in Deno — local dev uses `local.ts` exclusively. When editing `index.ts`, be aware it cannot be run or type-checked with standard Deno tooling.
+The production entry point (`index.ts`) uses Bunny Edge Script globals (`BunnySDK`). These are not available in Deno — local dev uses `local.ts` exclusively. `index.ts` cannot be run or type-checked with standard Deno tooling.
