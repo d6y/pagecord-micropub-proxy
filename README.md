@@ -108,12 +108,16 @@ deno task test
 ## Deployment to Bunny Edge Scripting
 
 1. Create a new **Standalone Script** in your Bunny dashboard.
-2. Connect your GitHub repository (or paste the code manually).
-3. Set the environment variables / secrets:
+2. Connect your GitHub repository.
+3. Set the build settings:
+   - **Install Command:** `curl -fsSL https://deno.land/install.sh | sh`
+   - **Build Command:** `deno task build`
+   - **Entry File:** `dist/main.js`
+4. Set the environment variables / secrets:
    - `PAGECORD_API_KEY`
    - `MICROPUB_TOKEN` → a strong random string
    - `PROXY_URL` → your script's public URL
-4. Deploy. The entry point is `index.ts`.
+5. Deploy.
 
 ---
 
@@ -138,14 +142,17 @@ For local testing use `https://micropub.test:8443` (requires the mkcert setup ab
 | Micropub property | Pagecord field |
 |-------------------|----------------|
 | `name` / `title` | `title` |
-| `content` | `content` (sent as Markdown) |
+| `content` | `content` (HTML) |
 | `post-status` | `status` (`published` or `draft`) |
 | `published` | `published_at` |
 | `category[]` | `tags` (comma-joined) |
+| `#hashtags` in content | `tags` (extracted and stripped from content) |
 | `mp-slug` / `slug` | `slug` |
 | `photo[]` | Uploaded to `/attachments`, embedded as `<action-text-attachment>` |
 
 Posts default to `draft` status unless `post-status=published` is sent.
+
+**iA Writer note:** iA Writer does not send YAML front matter `tags` as Micropub `category`. Use `#hashtags` at the end of the document instead — they are extracted as tags and removed from the post content before publishing.
 
 ---
 
