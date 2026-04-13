@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:docs.bunny.net)"
+      "WebFetch(domain:docs.bunny.net)",
+      "WebFetch(domain:help.pagecord.com)"
     ]
   }
 }

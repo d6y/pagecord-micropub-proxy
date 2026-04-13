@@ -9,36 +9,33 @@ export function makePagecordClient(apiBase: string, apiKey: string): PagecordCli
 
   return {
     async createPost(params: CreatePostParams): Promise<string> {
-      const body = new URLSearchParams(
-        Object.entries(params).filter((e): e is [string, string] => e[1] != null),
+      const body = Object.fromEntries(
+        Object.entries(params).filter(([, v]) => v != null),
       );
+
+      console.log(`[pagecord] POST ${apiBase}/posts`, JSON.stringify(body));
 
       const response = await fetch(`${apiBase}/posts`, {
         method: "POST",
-        headers: { ...authHeader, "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
+        headers: { ...authHeader, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
 
+      const responseText = await response.text();
+      console.log(`[pagecord] ${response.status}`, responseText);
+
       if (!response.ok) {
-        throw new Error(`Pagecord API error ${response.status}: ${await response.text()}`);
+        throw new Error(`Pagecord API error ${response.status}: ${responseText}`);
       }
 
-      const location = response.headers.get("Location");
-      if (location) return location;
-
-      try {
-        const data = await response.json() as Record<string, unknown>;
-        if (typeof data.url === "string") return data.url;
-      } catch {
-        // ignore parse failure
-      }
-
-      return `${apiBase}/posts`;
+      return "https://pagecord.com/app/posts";
     },
 
     async uploadAttachment(blob: Blob, filename: string): Promise<PagecordAttachment> {
       const form = new FormData();
       form.append("file", blob, filename);
+
+      console.log(`[pagecord] POST ${apiBase}/attachments  filename=${filename}  size=${blob.size} bytes`);
 
       const response = await fetch(`${apiBase}/attachments`, {
         method: "POST",
@@ -46,11 +43,14 @@ export function makePagecordClient(apiBase: string, apiKey: string): PagecordCli
         body: form,
       });
 
+      const responseText = await response.text();
+      console.log(`[pagecord] ${response.status}`, responseText);
+
       if (!response.ok) {
-        throw new Error(`Pagecord attachment error ${response.status}: ${await response.text()}`);
+        throw new Error(`Pagecord attachment error ${response.status}: ${responseText}`);
       }
 
-      return response.json() as Promise<PagecordAttachment>;
+      return JSON.parse(responseText) as PagecordAttachment;
     },
   };
 }

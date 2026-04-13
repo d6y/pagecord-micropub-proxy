@@ -1,6 +1,6 @@
 # Micropub → Pagecord Proxy
 
-A [Bunny Edge Scripting](https://docs.bunny.net/scripting) service that implements the [Micropub](https://www.w3.org/TR/micropub/) protocol and proxies posts to the [Pagecord API](https://github.com/d6y/pagecord/blob/main/docs/help-guide/api.md).
+A [Bunny Edge Scripting](https://docs.bunny.net/scripting) service that implements the [Micropub](https://www.w3.org/TR/micropub/) protocol and proxies posts to the [Pagecord API](https://help.pagecord.com/api).
 
 This lets you publish directly from **iA Writer** (or any Micropub client) to your Pagecord blog.
 
@@ -27,7 +27,6 @@ The proxy:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `PAGECORD_API_KEY` | Yes | Your Pagecord API key (Settings → API in your dashboard) |
-| `BLOG_URL` | Yes | Pagecord API base URL — `https://api.pagecord.com` |
 | `MICROPUB_TOKEN` | Yes | A secret token you choose; configure the same value in iA Writer |
 | `PROXY_URL` | Recommended | The public URL of this script (e.g. `https://micropub.example.com`). Used to advertise the media endpoint in `?q=config`. |
 
@@ -47,21 +46,23 @@ mkcert micropub.test                        # creates micropub.test.pem + microp
 echo "127.0.0.1 micropub.test" | sudo tee -a /etc/hosts
 ```
 
-Then start the HTTPS mock server:
+Then start the dev server. There are three modes:
+
+| Command | Mode | Description |
+|---------|------|-------------|
+| `deno task dev` | Mock, HTTP | Plain HTTP on `localhost:8000`. Pagecord calls are logged, nothing is sent. |
+| `deno task dev:https` | Mock, HTTPS | HTTPS on `micropub.test:8443`. Required by iA Writer. Pagecord calls are logged. |
+| `deno task dev:live` | **Live**, HTTPS | HTTPS on `micropub.test:8443`. Posts are created for real via the Pagecord API. |
+
+For live mode, set your credentials in the environment:
 
 ```sh
-deno task dev:https
-# Listening on https://micropub.test:8443
+export PAGECORD_API_KEY=your-api-key
+export MICROPUB_TOKEN=your-chosen-token
+deno task dev:live
 ```
 
-For non-iA-Writer testing (curl etc.) plain HTTP is fine:
-
-```sh
-deno task dev
-# Listening on http://localhost:8000
-```
-
-All Pagecord API calls are intercepted by a mock client that logs what *would* be sent.
+The startup banner shows which mode is active.
 
 ### Example requests
 
@@ -110,7 +111,6 @@ deno task test
 2. Connect your GitHub repository (or paste the code manually).
 3. Set the environment variables / secrets:
    - `PAGECORD_API_KEY`
-   - `BLOG_URL` → `https://api.pagecord.com`
    - `MICROPUB_TOKEN` → a strong random string
    - `PROXY_URL` → your script's public URL
 4. Deploy. The entry point is `index.ts`.
@@ -151,6 +151,5 @@ Posts default to `draft` status unless `post-status=published` is sent.
 
 ## Notes
 
-- The Pagecord API is not yet live. Once it is, no code changes should be needed — just set the environment variables and deploy.
 - `action=update` and `action=delete` are not yet implemented (they return `501`).
 - Images in the post body (inline Markdown `![](url)` syntax) are passed through as-is; only explicit `photo[]` properties are uploaded to Pagecord's attachment API.
