@@ -109,10 +109,11 @@ function parseJsonEntry(body: unknown): ParsedEntry | null {
   const rawStatus = firstOf(props["post-status"]) as string | undefined;
   const categoryTags = (props["category"] ?? []).filter((v): v is string => typeof v === "string");
   const { tags: hashTags, content: strippedContent } = extractHashtags(content);
+  const finalContent = transformCaptionedFigures(stripDuplicateCaptions(strippedContent));
 
   return {
     title: firstOf(props["name"]) as string | undefined,
-    content: strippedContent,
+    content: finalContent,
     contentFormat,
     status: toPostStatus(rawStatus),
     slug:
@@ -157,6 +158,41 @@ function extractHashtags(html: string): { tags: string[]; content: string } {
     .replace(/<p>(\s*<span class="hashtag">#\w+<\/span>\s*)+<\/p>/g, "")
     .trim();
   return { tags, content };
+}
+
+function transformCaptionedFigures(html: string): string {
+  return html.replace(/<figure>([\s\S]*?)<\/figure>/g, (match, inner) => {
+    if (!/<figcaption>/.test(inner)) return match;
+
+    const sgidMatch = inner.match(/src="[^"]*#sgid=([^"#]+)"/);
+    const captionMatch = inner.match(/<figcaption>([\s\S]*?)<\/figcaption>/);
+
+    if (sgidMatch && captionMatch) {
+      const sgid = decodeURIComponent(sgidMatch[1]);
+      const caption = captionMatch[1].trim().replace(/"/g, "&quot;");
+      return `<action-text-attachment sgid="${sgid}" caption="${caption}"></action-text-attachment>`;
+    }
+
+    // Fallback for figures without a known sgid
+    const transformed = inner
+      .replace(/(<img\b[^>]*?)\s+alt="[^"]*"/g, "$1")
+      .replace(/<figcaption>/g, `<figcaption class="attachment__caption">`);
+    return `<figure class="attachment attachment--preview">${transformed}</figure>`;
+  });
+}
+
+function stripDuplicateCaptions(html: string): string {
+  const figcaptionPattern = /<figcaption>([\s\S]*?)<\/figcaption>/g;
+  let result = html;
+  let match;
+  while ((match = figcaptionPattern.exec(html)) !== null) {
+    const captionText = match[1].trim();
+    if (captionText) {
+      const escaped = captionText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      result = result.replace(new RegExp(`<p>\\s*${escaped}\\s*<\\/p>`, "g"), "");
+    }
+  }
+  return result.trim();
 }
 
 function toPostStatus(raw: string | undefined): PostStatus {

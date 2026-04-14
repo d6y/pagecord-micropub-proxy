@@ -151,7 +151,8 @@ async function handleMediaUpload(
 
   try {
     const attachment = await pagecord.uploadAttachment(file, file.name || "upload");
-    return new Response(null, { status: 201, headers: { Location: attachment.url } });
+    const location = `${attachment.url}#sgid=${encodeURIComponent(attachment.attachable_sgid)}`;
+    return new Response(null, { status: 201, headers: { Location: location } });
   } catch (err) {
     return jsonError(502, `Pagecord attachment error: ${err instanceof Error ? err.message : String(err)}`);
   }

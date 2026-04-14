@@ -268,7 +268,7 @@ Deno.test("POST /media with valid file returns 201 with Location", async () => {
   );
 
   assertEquals(res.status, 201);
-  assertEquals(res.headers.get("Location"), attachment.url);
+  assertEquals(res.headers.get("Location"), `${attachment.url}#sgid=${encodeURIComponent(attachment.attachable_sgid)}`);
   assertEquals(calls.lastAttachmentFilename, "photo.jpg");
 });
 

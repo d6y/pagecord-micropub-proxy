@@ -311,6 +311,52 @@ Deno.test("JSON: category tags take precedence over hashtags", async () => {
 // Caption deduplication
 // ---------------------------------------------------------------------------
 
+Deno.test("JSON: uses action-text-attachment when sgid present in img src", async () => {
+  const sgid = "abc123sgid";
+  const url = `https://pagecord.com/blob.jpg#sgid=${encodeURIComponent(sgid)}`;
+  const html = `<figure>\n<img src="${url}" alt="A squirrel." />\n<figcaption>A squirrel.</figcaption>\n</figure>`;
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.content, `<action-text-attachment sgid="${sgid}" caption="A squirrel."></action-text-attachment>`);
+});
+
+Deno.test("JSON: escapes double quotes in action-text-attachment caption", async () => {
+  const sgid = "abc123sgid";
+  const url = `https://pagecord.com/blob.jpg#sgid=${encodeURIComponent(sgid)}`;
+  const html = `<figure>\n<img src="${url}" alt="" />\n<figcaption>She said &quot;hello&quot;</figcaption>\n</figure>`;
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.content.includes('caption="She said &quot;hello&quot;"'), true);
+});
+
+Deno.test("JSON: transforms captioned figure to Pagecord format", async () => {
+  const html = `<figure>\n<img src="dog.jpg" alt="A dog running." />\n<figcaption>A dog running.</figcaption>\n</figure>`;
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.content.includes('alt="'), false);
+  assertEquals(entry?.content.includes('class="attachment attachment--preview"'), true);
+  assertEquals(entry?.content.includes('class="attachment__caption"'), true);
+});
+
+Deno.test("JSON: preserves alt on img outside captioned figure", async () => {
+  const html = `<p><img src="dog.jpg" alt="A dog." /></p>`;
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.content.includes('alt="A dog."'), true);
+});
+
 Deno.test("JSON: strips duplicate caption paragraph after figure", async () => {
   const html = `<p>Intro.</p>\n\n<figure>\n<img src="dog.jpg" alt="" />\n<figcaption>A dog running.</figcaption>\n</figure>\n\n<p>A dog running.</p>`;
   const req = jsonRequest({
@@ -318,7 +364,7 @@ Deno.test("JSON: strips duplicate caption paragraph after figure", async () => {
     properties: { content: [{ html }] },
   });
   const entry = await parseMicropubRequest(req);
-  assertEquals(entry?.content.includes("<figcaption>A dog running.</figcaption>"), true);
+  assertEquals(entry?.content.includes("A dog running.</figcaption>"), true);
   assertEquals(entry?.content.includes("<p>A dog running.</p>"), false);
 });
 
