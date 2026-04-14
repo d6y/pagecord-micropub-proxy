@@ -48,13 +48,13 @@ Deno.test("JSON: returns null for missing type", async () => {
   assertEquals(await parseMicropubRequest(req), null);
 });
 
-Deno.test("JSON: parses title from name property", async () => {
+Deno.test("JSON: name property is not used as title", async () => {
   const req = jsonRequest({
     type: ["h-entry"],
     properties: { name: ["My Post"], content: ["body"] },
   });
   const entry = await parseMicropubRequest(req);
-  assertEquals(entry?.title, "My Post");
+  assertEquals(entry?.title, undefined);
 });
 
 Deno.test("JSON: parses published status", async () => {
@@ -169,12 +169,12 @@ Deno.test("form: returns null when h is missing", async () => {
   assertEquals(await parseMicropubRequest(formRequest(form)), null);
 });
 
-Deno.test("form: parses name as title", async () => {
+Deno.test("form: name property is not used as title", async () => {
   const form = new FormData();
   form.set("h", "entry");
   form.set("name", "Post Title");
   form.set("content", "body");
-  assertEquals((await parseMicropubRequest(formRequest(form)))?.title, "Post Title");
+  assertEquals((await parseMicropubRequest(formRequest(form)))?.title, undefined);
 });
 
 Deno.test("form: parses post-status published", async () => {
@@ -388,6 +388,78 @@ Deno.test("JSON: preserves paragraphs that don't match any caption", async () =>
   const entry = await parseMicropubRequest(req);
   assertEquals(entry?.content.includes("<p>Unrelated paragraph.</p>"), true);
   assertEquals(entry?.content.includes("<p>Caption text.</p>"), false);
+});
+
+// ---------------------------------------------------------------------------
+// Title extraction from heading
+// ---------------------------------------------------------------------------
+
+Deno.test("JSON: h1 at start of HTML becomes title and is stripped from content", async () => {
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html: "<h1>My Post Title</h1>\n\n<p>Body text.</p>" }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.title, "My Post Title");
+  assertEquals(entry?.content.includes("<h1>"), false);
+  assertEquals(entry?.content.includes("Body text."), true);
+});
+
+Deno.test("JSON: h2 at start of HTML becomes title and is stripped from content", async () => {
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html: "<h2>Section Title</h2>\n\n<p>Body.</p>" }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.title, "Section Title");
+  assertEquals(entry?.content.includes("<h2>"), false);
+});
+
+Deno.test("JSON: no title when HTML has no heading", async () => {
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { name: ["filename.md"], content: [{ html: "<p>Just a note.</p>" }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.title, undefined);
+  assertEquals(entry?.content.includes("Just a note."), true);
+});
+
+Deno.test("JSON: heading not at start of content is not used as title", async () => {
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html: "<p>Intro.</p>\n\n<h1>Later Heading</h1>" }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.title, undefined);
+  assertEquals(entry?.content.includes("<h1>Later Heading</h1>"), true);
+});
+
+Deno.test("JSON: heading with inline HTML has tags stripped for title", async () => {
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html: "<h1><em>Styled</em> Title</h1>\n\n<p>Body.</p>" }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.title, "Styled Title");
+});
+
+Deno.test("form: markdown h1 at start becomes title and is stripped from content", async () => {
+  const form = new FormData();
+  form.set("h", "entry");
+  form.set("content", "# My Heading\n\nBody text.");
+  const entry = await parseMicropubRequest(formRequest(form));
+  assertEquals(entry?.title, "My Heading");
+  assertEquals(entry?.content.includes("# My Heading"), false);
+  assertEquals(entry?.content.includes("Body text."), true);
+});
+
+Deno.test("form: no title when markdown has no heading", async () => {
+  const form = new FormData();
+  form.set("h", "entry");
+  form.set("content", "Just a note.");
+  const entry = await parseMicropubRequest(formRequest(form));
+  assertEquals(entry?.title, undefined);
 });
 
 // ---------------------------------------------------------------------------

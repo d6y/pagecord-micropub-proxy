@@ -47,10 +47,12 @@ function parseFormEntry(form: FormData): ParsedEntry | null {
   }
 
   const rawStatus = getStr(form, "post-status") ?? getStr(form, "mp-post-status");
+  const rawContent = getStr(form, "content") ?? "";
+  const { title, content } = extractTitle(rawContent, "markdown");
 
   return {
-    title: getStr(form, "name") ?? getStr(form, "title"),
-    content: getStr(form, "content") ?? "",
+    title,
+    content,
     contentFormat: "markdown",
     status: toPostStatus(rawStatus),
     slug: getStr(form, "mp-slug") ?? getStr(form, "slug"),
@@ -108,11 +110,12 @@ function parseJsonEntry(body: unknown): ParsedEntry | null {
 
   const rawStatus = firstOf(props["post-status"]) as string | undefined;
   const categoryTags = (props["category"] ?? []).filter((v): v is string => typeof v === "string");
-  const { tags: hashTags, content: strippedContent } = extractHashtags(content);
+  const { title, content: contentAfterTitle } = extractTitle(content, contentFormat);
+  const { tags: hashTags, content: strippedContent } = extractHashtags(contentAfterTitle);
   const finalContent = transformCaptionedFigures(stripDuplicateCaptions(strippedContent));
 
   return {
-    title: firstOf(props["name"]) as string | undefined,
+    title,
     content: finalContent,
     contentFormat,
     status: toPostStatus(rawStatus),
@@ -144,6 +147,22 @@ function firstOf(arr: unknown[] | undefined): unknown {
 
 function isPhotoKey(key: string): boolean {
   return key === "photo" || key === "photo[]";
+}
+
+function extractTitle(content: string, format: ContentFormat): { title: string | undefined; content: string } {
+  if (format === "html") {
+    const match = content.match(/^\s*<h[1-6]>([\s\S]*?)<\/h[1-6]>\s*/i);
+    if (match) {
+      const title = match[1].replace(/<[^>]+>/g, "").trim() || undefined;
+      return { title, content: content.slice(match[0].length) };
+    }
+  } else {
+    const match = content.match(/^#{1,6} (.+?)(?:\r?\n|$)/);
+    if (match) {
+      return { title: match[1].trim(), content: content.slice(match[0].length).trimStart() };
+    }
+  }
+  return { title: undefined, content };
 }
 
 function extractHashtags(html: string): { tags: string[]; content: string } {

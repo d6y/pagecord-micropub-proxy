@@ -166,7 +166,7 @@ Deno.test("POST JSON h-entry creates post and returns 201 with Location", async 
           type: ["h-entry"],
           properties: {
             name: ["My Post"],
-            content: ["Hello world"],
+            content: [{ html: "<h1>My Post</h1>\n\n<p>Hello world</p>" }],
             "post-status": ["published"],
             category: ["tag1", "tag2"],
             "mp-slug": ["my-post"],
@@ -180,7 +180,7 @@ Deno.test("POST JSON h-entry creates post and returns 201 with Location", async 
   assertEquals(res.status, 201);
   assertEquals(res.headers.get("Location"), postUrl);
   assertEquals(calls.lastPost?.title, "My Post");
-  assertEquals(calls.lastPost?.content, "Hello world");
+  assertEquals(calls.lastPost?.content, "<p>Hello world</p>");
   assertEquals(calls.lastPost?.status, "published");
   assertEquals(calls.lastPost?.tags, "tag1,tag2");
   assertEquals(calls.lastPost?.slug, "my-post");
