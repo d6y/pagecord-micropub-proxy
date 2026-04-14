@@ -268,6 +268,83 @@ Deno.test("form: ignores non-http photo strings", async () => {
 });
 
 // ---------------------------------------------------------------------------
+// Hashtag extraction
+// ---------------------------------------------------------------------------
+
+Deno.test("JSON: extracts single hashtag from content and strips paragraph", async () => {
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: {
+      content: [{ html: '<p>Hello world.</p>\n\n<p><span class="hashtag">#dogs</span></p>' }],
+    },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.tags, ["dogs"]);
+  assertEquals(entry?.content, "<p>Hello world.</p>");
+});
+
+Deno.test("JSON: extracts multiple hashtags from single paragraph", async () => {
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: {
+      content: [{ html: '<p>Body.</p>\n\n<p><span class="hashtag">#writing</span> <span class="hashtag">#software</span> <span class="hashtag">#dogs</span></p>' }],
+    },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.tags, ["writing", "software", "dogs"]);
+  assertEquals(entry?.content, "<p>Body.</p>");
+});
+
+Deno.test("JSON: category tags take precedence over hashtags", async () => {
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: {
+      content: [{ html: '<p>Body.</p>\n\n<p><span class="hashtag">#dogs</span></p>' }],
+      category: ["explicit"],
+    },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.tags, ["explicit"]);
+});
+
+// ---------------------------------------------------------------------------
+// Caption deduplication
+// ---------------------------------------------------------------------------
+
+Deno.test("JSON: strips duplicate caption paragraph after figure", async () => {
+  const html = `<p>Intro.</p>\n\n<figure>\n<img src="dog.jpg" alt="" />\n<figcaption>A dog running.</figcaption>\n</figure>\n\n<p>A dog running.</p>`;
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.content.includes("<figcaption>A dog running.</figcaption>"), true);
+  assertEquals(entry?.content.includes("<p>A dog running.</p>"), false);
+});
+
+Deno.test("JSON: strips multiple duplicate captions", async () => {
+  const html = `<figure>\n<figcaption>First caption.</figcaption>\n</figure>\n\n<p>First caption.</p>\n\n<figure>\n<figcaption>Second caption.</figcaption>\n</figure>\n\n<p>Second caption.</p>`;
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.content.includes("<p>First caption.</p>"), false);
+  assertEquals(entry?.content.includes("<p>Second caption.</p>"), false);
+});
+
+Deno.test("JSON: preserves paragraphs that don't match any caption", async () => {
+  const html = `<figure>\n<figcaption>Caption text.</figcaption>\n</figure>\n\n<p>Caption text.</p>\n\n<p>Unrelated paragraph.</p>`;
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.content.includes("<p>Unrelated paragraph.</p>"), true);
+  assertEquals(entry?.content.includes("<p>Caption text.</p>"), false);
+});
+
+// ---------------------------------------------------------------------------
 // Content-type dispatch
 // ---------------------------------------------------------------------------
 

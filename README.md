@@ -50,8 +50,7 @@ Then start the dev server. There are three modes:
 
 | Command | Mode | Description |
 |---------|------|-------------|
-| `deno task dev` | Mock, HTTP | Plain HTTP on `localhost:8000`. Pagecord calls are logged, nothing is sent. |
-| `deno task dev:https` | Mock, HTTPS | HTTPS on `micropub.test:8443`. Required by iA Writer. Pagecord calls are logged. |
+| `deno task dev` | Mock, HTTPS | HTTPS on `micropub.test:8443`. Pagecord calls are logged, nothing is sent. |
 | `deno task dev:live` | **Live**, HTTPS | HTTPS on `micropub.test:8443`. Posts are created for real via the Pagecord API. |
 
 For live mode, set your credentials in the environment:

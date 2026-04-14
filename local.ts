@@ -4,13 +4,12 @@
  * Runs the same handler logic as the Bunny Edge Script, but uses a mock
  * Pagecord client that logs calls instead of hitting the real API.
  *
- * Usage (HTTP):
- *   deno run --allow-net --allow-env --allow-read local.ts
- *
- * Usage (HTTPS, required by iA Writer):
+ * Usage (mock, HTTPS — required by iA Writer):
  *   mkcert micropub.test          # run once in the project directory
- *   HTTPS=true deno run --allow-net --allow-env --allow-read local.ts
- *   # then use https://micropub.test:8443/ in iA Writer
+ *   deno task dev
+ *
+ * Usage (live, HTTPS):
+ *   PAGECORD_API_KEY=xxx MICROPUB_TOKEN=xxx deno task dev:live
  *
  * Custom token / port:
  *   MICROPUB_TOKEN=mytoken PORT=9000 deno run --allow-net --allow-env --allow-read local.ts

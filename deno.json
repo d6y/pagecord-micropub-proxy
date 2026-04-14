@@ -4,8 +4,7 @@
     "@std/assert": "jsr:@std/assert@^1.0.19"
   },
   "tasks": {
-    "dev": "MICROPUB_TOKEN=test-token deno run --allow-net --allow-env --allow-read local.ts",
-    "dev:https": "HTTPS=true MICROPUB_TOKEN=test-token deno run --allow-net --allow-env --allow-read local.ts",
+    "dev": "HTTPS=true MICROPUB_TOKEN=test-token PAGECORD_API_KEY= deno run --allow-net --allow-env --allow-read local.ts",
     "dev:live": "HTTPS=true deno run --allow-net --allow-env --allow-read local.ts",
     "build": "deno run --allow-all npm:esbuild index.ts --bundle --outfile=dist/main.js --format=esm --external:@bunny.net/edgescript-sdk",
     "check": "deno check local.ts",

@@ -9,8 +9,7 @@ A [Micropub protocol](https://www.w3.org/TR/micropub/) proxy that bridges Microp
 ## Commands
 
 ```bash
-deno task dev          # HTTP dev server on localhost:8000 with mock Pagecord client
-deno task dev:https    # HTTPS dev server on micropub.test:8443 with mock Pagecord client (requires mkcert setup)
+deno task dev          # HTTPS dev server on micropub.test:8443 with mock Pagecord client (requires mkcert setup)
 deno task dev:live     # HTTPS dev server on micropub.test:8443 hitting the real Pagecord API
 deno task build        # Bundle index.ts → dist/main.js for Bunny deployment (uses esbuild)
 deno check local.ts    # TypeScript type-check (index.ts cannot be checked with Deno tooling)
