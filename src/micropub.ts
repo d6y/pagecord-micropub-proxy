@@ -149,11 +149,22 @@ function isPhotoKey(key: string): boolean {
   return key === "photo" || key === "photo[]";
 }
 
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
 function extractTitle(content: string, format: ContentFormat): { title: string | undefined; content: string } {
   if (format === "html") {
     const match = content.match(/^\s*<h[1-6]>([\s\S]*?)<\/h[1-6]>\s*/i);
     if (match) {
-      const title = match[1].replace(/<[^>]+>/g, "").trim() || undefined;
+      const raw = match[1].replace(/<[^>]+>/g, "").trim();
+      const title = raw ? decodeHtmlEntities(raw) : undefined;
       return { title, content: content.slice(match[0].length) };
     }
   } else {

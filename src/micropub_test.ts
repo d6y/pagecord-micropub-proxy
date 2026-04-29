@@ -444,6 +444,15 @@ Deno.test("JSON: heading with inline HTML has tags stripped for title", async ()
   assertEquals(entry?.title, "Styled Title");
 });
 
+Deno.test("JSON: HTML entities in heading are decoded in title", async () => {
+  const req = jsonRequest({
+    type: ["h-entry"],
+    properties: { content: [{ html: '<h1>My &quot;Pagecord test&quot; page</h1>\n\n<p>Body.</p>' }] },
+  });
+  const entry = await parseMicropubRequest(req);
+  assertEquals(entry?.title, 'My "Pagecord test" page');
+});
+
 Deno.test("form: markdown h1 at start becomes title and is stripped from content", async () => {
   const form = new FormData();
   form.set("h", "entry");
