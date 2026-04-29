@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A [Micropub protocol](https://www.w3.org/TR/micropub/) proxy that bridges Micropub clients (like iA Writer) to [Pagecord](https://pagecord.com) blogs. Runs as a [Bunny Edge Script](https://docs.bunny.net/docs/edge-scripting-overview) in production and as a local Deno HTTP/HTTPS server for development.
+A [Micropub protocol](https://www.w3.org/TR/micropub/) bridge from Micropub clients (like iA Writer) to [Pagecord](https://pagecord.com) blogs. Runs as a [Bunny Edge Script](https://docs.bunny.net/docs/edge-scripting-overview) in production and as a local Deno HTTP/HTTPS server for development.
 
 ## Commands
 
@@ -44,7 +44,7 @@ Micropub client → POST / → handler.ts → pagecord.ts → Pagecord API
 
 **Image handling:** Photos arrive as either `Blob` (multipart upload) or URL strings. The handler fetches URL-referenced images, uploads them to Pagecord's `/attachments` endpoint, then embeds them as `<action-text-attachment>` XML tags within post content.
 
-**Tags:** iA Writer does not send YAML `tags` front matter as Micropub `category`. Instead, `#hashtags` written in the document body are sent as `<span class="hashtag">#word</span>` in the HTML. The proxy extracts these as tags and strips the hashtag paragraph from the content before forwarding to Pagecord.
+**Tags:** iA Writer does not send YAML `tags` front matter as Micropub `category`. Instead, `#hashtags` written in the document body are sent as `<span class="hashtag">#word</span>` in the HTML. The bridge extracts these as tags and strips the hashtag paragraph from the content before forwarding to Pagecord.
 
 **Property mapping (Micropub → Pagecord):**
 - `name`/`title` → `title`
@@ -60,7 +60,7 @@ Micropub client → POST / → handler.ts → pagecord.ts → Pagecord API
 |----------|-------|-------------|
 | `PAGECORD_API_KEY` | Production + live dev | Bearer token for Pagecord API |
 | `MICROPUB_TOKEN` | Production + live dev | Static token Micropub clients must supply |
-| `PROXY_URL` | Production | Public URL of this proxy (advertised in `?q=config` response) |
+| `BRIDGE_URL` | Production | Public URL of this bridge (advertised in `?q=config` response) |
 | `HTTPS` | Local dev | Set to `"true"` to enable HTTPS (set automatically by `dev:https` and `dev:live` tasks) |
 | `PORT` / `HOST` | Local dev | Override defaults |
 

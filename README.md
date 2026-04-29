@@ -1,6 +1,6 @@
-# Micropub → Pagecord Proxy
+# Micropub → Pagecord Bridge
 
-A [Bunny Edge Scripting](https://docs.bunny.net/scripting) service that implements the [Micropub](https://www.w3.org/TR/micropub/) protocol and proxies posts to the [Pagecord API](https://help.pagecord.com/api).
+A [Bunny Edge Scripting](https://docs.bunny.net/scripting) service that implements the [Micropub](https://www.w3.org/TR/micropub/) protocol and bridges posts to the [Pagecord API](https://help.pagecord.com/api).
 
 This lets you publish directly from **iA Writer** (or any Micropub client) to your Pagecord blog.
 
@@ -9,11 +9,11 @@ This lets you publish directly from **iA Writer** (or any Micropub client) to yo
 ## How it works
 
 ```
-iA Writer  →  POST /  (Micropub)  →  proxy  →  POST /posts  (Pagecord API)
-                                              →  POST /attachments (images)
+iA Writer  →  POST /  (Micropub)  →  bridge  →  POST /posts  (Pagecord API)
+                                               →  POST /attachments (images)
 ```
 
-The proxy:
+The bridge:
 - Verifies a static Bearer token
 - Parses Micropub `h-entry` posts (form-encoded, JSON, or multipart)
 - Uploads any attached images to the Pagecord attachments API and embeds them as `<action-text-attachment>` tags
@@ -28,7 +28,7 @@ The proxy:
 |----------|----------|-------------|
 | `PAGECORD_API_KEY` | Yes | Your Pagecord API key (Settings → API in your dashboard) |
 | `MICROPUB_TOKEN` | Yes | A secret token you choose; configure the same value in iA Writer |
-| `PROXY_URL` | Recommended | The public URL of this script (e.g. `https://micropub.example.com`). Used to advertise the media endpoint in `?q=config`. |
+| `BRIDGE_URL` | Recommended | The public URL of this script (e.g. `https://micropub.example.com`). Used to advertise the media endpoint in `?q=config`. |
 
 ---
 
@@ -115,7 +115,7 @@ deno task test
 4. Set the environment variables / secrets:
    - `PAGECORD_API_KEY`
    - `MICROPUB_TOKEN` → a strong random string
-   - `PROXY_URL` → your script's public URL
+   - `BRIDGE_URL` → your script's public URL
 5. Deploy.
 
 ---
@@ -124,7 +124,7 @@ deno task test
 
 1. In iA Writer, go to **Settings → Accounts → Add Account → Micropub**.
 2. Choose **Enter Token Manually**.
-3. Enter your proxy URL (e.g. `https://micropub.example.com`) — this is the discovery URL.
+3. Enter your bridge URL (e.g. `https://micropub.example.com`) — this is the discovery URL.
 4. Enter the value you set as `MICROPUB_TOKEN`.
 5. Click **Add Account**.
 

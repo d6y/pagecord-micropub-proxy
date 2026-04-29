@@ -33,7 +33,7 @@ function makeMockClient() {
 function makeConfig(overrides?: Partial<HandlerConfig>): HandlerConfig {
   return {
     micropubToken: "secret",
-    proxyUrl: "https://micropub.example.com",
+    bridgeUrl: "https://micropub.example.com",
     pagecord: makeMockClient().client,
     ...overrides,
   };

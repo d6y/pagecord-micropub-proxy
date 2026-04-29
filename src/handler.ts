@@ -5,8 +5,8 @@ export interface HandlerConfig {
   /** Bearer token that Micropub clients must supply. */
   micropubToken: string;
   pagecord: PagecordClient;
-  /** Base URL of this proxy, used to advertise the media endpoint. */
-  proxyUrl: string;
+  /** Base URL of this bridge, used to advertise the media endpoint. */
+  bridgeUrl: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -24,13 +24,13 @@ export async function handleRequest(
       const html = `<!DOCTYPE html>
 <html>
 <head>
-  <link rel="micropub" href="${config.proxyUrl}/">
+  <link rel="micropub" href="${config.bridgeUrl}/">
 </head>
 <body></body>
 </html>`;
       return new Response(html, { headers: { "Content-Type": "text/html" } });
     }
-    return handleQuery(url, config.proxyUrl);
+    return handleQuery(url, config.bridgeUrl);
   }
 
   const authError = checkAuth(request, config.micropubToken);
@@ -61,12 +61,12 @@ function checkAuth(request: Request, expected: string): Response | null {
 // GET — Micropub queries
 // ---------------------------------------------------------------------------
 
-function handleQuery(url: URL, proxyUrl: string): Response {
+function handleQuery(url: URL, bridgeUrl: string): Response {
   const q = url.searchParams.get("q");
 
   if (q === "config") {
     return Response.json({
-      "media-endpoint": `${proxyUrl}/media`,
+      "media-endpoint": `${bridgeUrl}/media`,
       "post-types": [
         { type: "note", name: "Note" },
         { type: "article", name: "Article" },
